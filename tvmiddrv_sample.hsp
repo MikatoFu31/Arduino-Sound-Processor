@@ -1,0 +1,143 @@
+//HSPTV! MIDI Driver for Arduino-SP sample1
+
+/*
+変更履歴:
+20180823 ファーストリリース
+20180824 改行コードCR、改行コードLFに対応。サンプルデータをすべてsamplesサブフォルダへ移動、探索先をsamplesサブフォルダに変更
+20180825 分解能などの表示機能を追加
+20180911 Arduino-SP用tvmiddrvに対応するために一部変更
+*/
+#define available_channel_count 1
+#include "tvmiddrv.as"
+//COMポート番号を指定してください。
+tvmiddrv_init 3
+if stat=1{
+	dialog "せつぞくむりでした"
+	end
+}
+chdir "samples"
+dim available,available_channel_count
+sdim loadedmusic,4096
+sdim music,256,available_channel_count
+repeat available_channel_count
+	if music(cnt)="":music(cnt)=" "
+loop
+dim noted,available_channel_count
+sdim musicname,256
+sdim a,1
+a=" "
+dim lpt
+sdim tmp,16
+lpt=4
+sdim songlist,4096
+dim songno
+sdim lf
+poke lf,0,10
+dim oneloop
+oneloop=16
+onexit goto *exit
+*start
+
+cls 0
+TVMIDDRV_TICK=0
+font msgothic,16
+pos 0,0
+color 0,0,0
+repeat available_channel_count
+	pos 0,80+20*cnt
+	available(cnt)=1
+	chkbox ""+cnt+" ch",available(cnt)
+loop
+dirlist songlist,"*.txt",3
+objsize 128,24
+combox songno,24,songlist
+button goto "Load data",*load
+await 100
+repeat
+	redraw 0
+	color 255,255,255
+	boxf
+	color 0,0,0
+	pos 0,0
+	mes "HSPTV! MIDI Driver Sample"
+	pos 360,0
+	mes "Now Playing:"+musicname
+	pos 0,60
+	mes "Channel List"
+	pos 0,20
+	mes "Resolution:"+strf("%2.2f",25.0/lpt)+"/sec"
+	pos 160,20
+	mes "Loop Count:"+(TVMIDDRV_TICK/oneloop)
+	repeat 16
+		color 228,228,228
+		line 100+32*cnt,60,100+32*cnt,300
+	loop
+	
+	
+	
+	if cnt\lpt=0{
+		repeat available_channel_count
+			if available(cnt)=1:tvmiddrv_play cnt,music(cnt):else:tvmiddrv_play cnt,a
+			noted(cnt)=stat
+		loop
+		tvmiddrv_tick_next
+	}else{
+	}
+	repeat available_channel_count
+		pos 80,80+20*cnt
+		if noted(cnt)>0{
+			color 0,0,0
+		}
+		if noted(cnt)=0{
+			color 100,100,100
+		}
+		if noted(cnt)<0{
+			color 200,200,200
+		}
+		mes "●"
+		color 150,150,150
+		pos 100,80+20*cnt
+		if available(cnt)=0:color 200,200,200
+		mes music(cnt)
+		if available(cnt)=1{
+			pos 100+8*(TVMIDDRV_TICK\strlen(music(cnt))),80+20*cnt
+			color 240,0,0
+			mes strmid(music(cnt),(TVMIDDRV_TICK\strlen(music(cnt))),1)
+		}
+	loop
+	redraw 1
+	await 40
+loop
+stop
+*load
+	notesel songlist
+	noteget tmp,songno
+//	if stat=1{
+		exist tmp
+		if strsize!-1{
+			sdim loadedmusic,4096
+			bload tmp,loadedmusic
+			strrep loadedmusic,"\n",lf
+			strrep loadedmusic,"\r",lf
+			strrep loadedmusic,lf,"\n"
+			musicname=getpath(tmp,9)
+			notesel loadedmusic
+			repeat 10
+				tvmiddrv_play cnt,a
+				noteget music(cnt),cnt
+				if music(cnt)="":music(cnt)=a
+			loop
+			
+			noteget tmp,10
+			lpt=int(tmp)
+			if lpt=0:lpt=4
+			
+			noteget tmp,11
+			oneloop=int(tmp)
+			if oneloop=0:oneloop=32
+		}
+//	}
+	goto *start
+*exit
+	鍵盤の電源を落とす
+	end
