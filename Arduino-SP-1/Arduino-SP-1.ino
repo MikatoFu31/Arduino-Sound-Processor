@@ -1,7 +1,6 @@
 //Arduino-Sound-Processor type1 version 0.1 beta
 
 #define AVAILABLE_CHANNEL_COUNT 1
-String readdata = String();
 byte data_recieved;
 double freq[AVAILABLE_CHANNEL_COUNT];
 byte chpower[AVAILABLE_CHANNEL_COUNT];

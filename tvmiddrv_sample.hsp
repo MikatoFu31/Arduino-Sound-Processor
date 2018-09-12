@@ -10,7 +10,7 @@
 #define available_channel_count 1
 #include "tvmiddrv.as"
 //COMポート番号を指定してください。
-tvmiddrv_init 3
+tvmiddrv_init 5
 if stat=1{
 	dialog "せつぞくむりでした"
 	end
@@ -52,6 +52,8 @@ dirlist songlist,"*.txt",3
 objsize 128,24
 combox songno,24,songlist
 button goto "Load data",*load
+mes "ピッチ:"
+input pitch
 await 100
 repeat
 	redraw 0
@@ -77,7 +79,12 @@ repeat
 	
 	if cnt\lpt=0{
 		repeat available_channel_count
-			if available(cnt)=1:tvmiddrv_play cnt,music(cnt):else:tvmiddrv_play cnt,a
+			if available(cnt)=1{
+				tvmiddrv_play cnt,music(cnt)
+				if stat!-1:ピッチ変更 0,pitch
+			}else{
+				tvmiddrv_play cnt,a
+			}
 			noted(cnt)=stat
 		loop
 		tvmiddrv_tick_next

@@ -1,6 +1,6 @@
 #include "hspmath.as"
 #include "hspext.as"
-//Mikatofu31's MIDI API version beta 20180909
+//Mikatofu31's MIDI API version beta 20180911
 //Plain midi synth用MIDIドライバをtvmiddrv用に小型化したものです。
 //↑ってやつを、Arduino-SP type1用に改造したものです。
 #module MIDITOOLS
@@ -8,6 +8,9 @@
 		dim portnumber
 		portnumber=portno
 		dim tonetoplay
+		dim toneupper
+		dim tonedowner
+		dim basetone
 		comopen@ portnumber,"baud=9600 parity=N data=8 stop=1"
 		dim tonedata,12
 		tonedata( 0)=65
@@ -25,12 +28,33 @@
 	return stat
 	#deffunc  鍵盤を押す int channel,int tone
 		tonetoplay=tonedata(tone\12)*pow@(2,tone/12)
+		basetone=tonetoplay
+		toneupper=tonedata((tone+1)\12)*pow@(2,(tone+1)/12)
+		tonedowner=tonedata((tone-1)\12)*pow@(2,(tone-1)/12)
+*sendtone
 		//周波数データを一旦削除
 		computc@ '.'
 		logmes str(tonetoplay)
 		//周波数データを書き込んでチャンネル電源をONにする
 		comput@ str(tonetoplay)
 		computc@ '+'
+	return 0
+	/*MIDIAPI-ASP専用命令です。
+		ピッチ変更 int channel,int rate
+		[channel]CHのピッチを変更します。
+		半音上がレート10、半音下がレート-10です。
+		-10<rate<10の範囲を超えても一応値に合わせて音程が上下しますが正確さは知りません。多分-20は全音下ではないです。(半音の周波数の差分から計算している関係で)
+	*/
+	#deffunc ピッチ変更 int channel,int rate
+		if rate=0{
+			tonetoplay=basetone
+		}
+		if rate<0{
+			tonetoplay=basetone-(basetone-tonedowner)*abs(rate)/10
+		}else{
+			tonetoplay=basetone+(toneupper-basetone)*abs(rate)/10
+		}
+		gosub *sendtone
 	return 0
 	#deffunc  鍵盤のカスタムコマンド int status,int channel,int data1,int data2
 		//midisendmsg midi_uuid,((status<<4) | channel | (data1<<8) | (data2<<16))
